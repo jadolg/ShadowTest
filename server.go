@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/getsentry/sentry-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
@@ -37,6 +38,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 
 		timeout, err := getDefaultTimeout()
 		if err != nil {
+			sentry.CaptureException(err)
 			log.Errorf("impossible to get default timeout %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
@@ -71,6 +73,7 @@ func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 		err = json.NewEncoder(w).Encode(details)
 
 		if err != nil {
+			sentry.CaptureException(err)
 			log.Errorf("error occurred when sending the data back to the client %v", err)
 		}
 	})
@@ -108,6 +111,7 @@ func getAddressAndTimeoutFromForm(w http.ResponseWriter, r *http.Request, addres
 	if err := r.ParseForm(); err != nil {
 		_, err := fmt.Fprintf(w, "ParseForm() err: %v", err)
 		if err != nil {
+			sentry.CaptureException(err)
 			log.Errorf("impossible to write response %v", err)
 			return "", 0, true
 		}
@@ -118,6 +122,7 @@ func getAddressAndTimeoutFromForm(w http.ResponseWriter, r *http.Request, addres
 	if r.FormValue("timeout") != "" {
 		timeout, err = strconv.Atoi(r.FormValue("timeout"))
 		if err != nil {
+			sentry.CaptureException(err)
 			http.Error(w, "Unable to parse timeout", http.StatusBadRequest)
 			return "", 0, true
 		}
