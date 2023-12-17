@@ -8,6 +8,11 @@ import (
 	"os"
 
 	_ "embed"
+
+	"github.com/slok/go-http-metrics/middleware"
+	"github.com/slok/go-http-metrics/middleware/std"
+
+	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 )
 
 func main() {
@@ -34,8 +39,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	mdlw := middleware.New(middleware.Config{
+		Recorder: metrics.NewRecorder(metrics.Config{
+			Prefix: "shadowtest",
+		}),
+	})
+	routerWithMetrics := std.Handler("", mdlw, router)
+
 	log.Infof("Starting server at port %s\n", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), router); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), routerWithMetrics); err != nil {
 		log.Fatal(err)
 	}
 }
