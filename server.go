@@ -20,13 +20,19 @@ type proxyJson struct {
 	Timeout int    `json:"timeout,omitempty"`
 }
 
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
 //go:embed index.html
 var indexFile embed.FS
 
 func getRouter(ipv4Only bool) (*http.ServeMux, error) {
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("/v1/test", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Deprecated endpoint. Use v2 instead.", http.StatusNotFound)
+	})
+	mux.HandleFunc("/v2/test", func(w http.ResponseWriter, r *http.Request) {
 		defer closeBody(r)
 
 		if r.Method != "POST" {
@@ -93,9 +99,11 @@ func fillCheckError(w http.ResponseWriter, err error, address string) {
 		message = fmt.Sprintf("Timeout getting information for address %s", address)
 	}
 
-	_, err = w.Write([]byte(message))
+	response := errorResponse{Error: message}
+	err = json.NewEncoder(w).Encode(response)
+
 	if err != nil {
-		log.Errorf("Impossible to write response %v", err)
+		log.Errorf("error occurred when sending the data back to the client %v", err)
 	}
 }
 

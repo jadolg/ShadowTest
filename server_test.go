@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,7 +30,7 @@ func TestGetProxyDetailsFromServerJSON(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\" }", address)))
-	req, _ := http.NewRequest("POST", "/v1/test", body)
+	req, _ := http.NewRequest("POST", "/v2/test", body)
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -52,11 +53,27 @@ func TestGetProxyDetailsFromServerTimeout(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\", \"timeout\": 1 }", address)))
-	req, _ := http.NewRequest("POST", "/v1/test", body)
+	req, _ := http.NewRequest("POST", "/v2/test", body)
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
 
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestDeprecatedV1(t *testing.T) {
+	router, err := getRouter(true)
+	assert.NoError(t, err)
+
+	body := bytes.NewBuffer([]byte(fmt.Sprintf("{ \"address\":\"%s\" }", "")))
+	req, _ := http.NewRequest("POST", "/v1/test", body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+	content, err := io.ReadAll(rr.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Deprecated endpoint. Use v2 instead.\n"), content)
 }

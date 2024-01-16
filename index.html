@@ -36,7 +36,7 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <script>
-    const { createApp } = Vue
+    const {createApp} = Vue
 
     createApp({
         data() {
@@ -48,13 +48,13 @@ _\ \ | | | (_| | (_| | (_) \ V  V / / / |  __/\__ \ |_
             }
         },
         methods: {
-            testProxy(){
-                axios.post('/v1/test',
+            testProxy() {
+                axios.post('/v2/test',
                     {
                         'address': this.proxy
                     }
                 ).then(response => {
-                    if (typeof response.data === 'string' && response.data.startsWith('Unable to get information for address')) {
+                    if (response.data.error !== undefined) {
                         this.proxyStatus = 'Offline';
                         this.proxyAddress = '';
                         this.proxyLocation = '';
